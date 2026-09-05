@@ -68,8 +68,8 @@ nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid
   <div class="auth-card">
     <h1>BRI Mobile</h1>
     <p>Sign in to your BRI cloud account to continue.</p>
-    <label for="authEmail">Email</label>
-    <input id="authEmail" type="email" autocomplete="email" placeholder="Your email">
+    <label for="authUsername">Name</label>
+    <input id="authUsername" type="text" autocomplete="username" autocapitalize="none" placeholder="Your name">
     <label for="authPassword">Password</label>
     <input id="authPassword" type="password" autocomplete="current-password" placeholder="Your password">
     <button class="btn primary" id="authBtn" onclick="signInToCloud()">Sign in</button>
@@ -159,8 +159,8 @@ nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid
  <div class="section-title">More</div>
  <div class="card"><b>Cloud connection</b><div style="margin-top:8px"><span class="cloud-pill cloud-ok">Supabase connected</span></div><div style="margin-top:8px;font-size:13px;color:#666">Signed in as <span id="cloudUser">your account</span></div><button class="btn secondary" style="margin-top:12px" onclick="signOutFromCloud()">Sign out</button></div>
  <div class="card">
-  <b>Mobile build 28</b>
-  <p class="meta">Core workflow prototype based on the existing Excel inventory data.</p>
+  <b>BRI Mobile • Build 33</b>
+  <p class="meta">Cloud inventory manager. Sign in using your BRI user name.</p>
   <button class="btn secondary" onclick="exportData()">Export backup</button>
  </div>
 </section>
@@ -1251,11 +1251,15 @@ function addEerinSale(x,saleDate,soldPrice){
 }
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='bri-backup.json';a.click()}
 async function signInToCloud(){
- const email=document.getElementById('authEmail').value.trim();
+ const username=document.getElementById('authUsername').value.trim();
  const password=document.getElementById('authPassword').value;
  const msg=document.getElementById('authMsg');
  msg.textContent='Signing in…'; msg.style.color='';
- if(!email||!password){msg.textContent='Enter your email and password.';return;}
+ if(!username||!password){msg.textContent='Enter your name and password.';return;}
+ const {data:lookup,error:lookupError}=await supabaseClient.rpc('get_login_email',{p_username:username.toLowerCase()});
+ if(lookupError){msg.textContent='Login setup error: '+lookupError.message;msg.style.color='#b00020';return;}
+ const email=lookup;
+ if(!email){msg.textContent='Name not found. Check the name or ask an administrator to add your account.';msg.style.color='#b00020';return;}
  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
  if(error){msg.textContent=error.message;msg.style.color='#b00020';return;}
  currentUser=data.user;
@@ -1282,19 +1286,6 @@ supabaseClient.auth.onAuthStateChange((_event,session)=>{currentUser=session?.us
 bootstrapCloud();
 </script>
 
-<div style="position:fixed;right:10px;bottom:10px;z-index:9999;font:11px system-ui;
-background:#111;color:#fff;padding:6px 9px;border-radius:999px;opacity:.75">
-BRI Mobile • Build 32 • Supabase cloud
-</div>
 
 
-<script>
-(function(){
-  function bindLogin(){
-    var b=document.getElementById("authBtn");
-    if(b && !b.dataset.bound){ b.dataset.bound="1"; b.addEventListener("click",function(){ if(typeof window.signInToCloud === "function") window.signInToCloud(); }); }
-  }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bindLogin); else bindLogin();
-})();
-</script>
 </body></html>
